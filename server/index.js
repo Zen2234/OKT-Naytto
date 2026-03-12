@@ -42,9 +42,17 @@ app.post('/api/daily', async (req, res) => {
     }
 })
 
-//This should update just one meal in case of mistakes, instead of overwriting the entire day
+// This should update just one meal in case of mistakes, instead of overwriting the entire day
 app.patch('/api/update-count', async (req, res) => {
-    const { date, unitName, mealType, newCount } = req.body 
+    let { date, unitName, mealType, newCount } = req.body
+
+    const parsedCount = Number(newCount)
+
+    if (isNaN(parsedCount) || parsedCount < 0) {
+        return res.status(400).json({
+            error: "Virheellinen syöte. Ole hyvä ja syötä vain numeroita."
+        })
+    }
 
     try {
         const updated = await DailyStat.findOneAndUpdate(
@@ -58,7 +66,8 @@ app.patch('/api/update-count', async (req, res) => {
             },
             {
                 arrayFilters: [{ "u.unitName": unitName }, { "m.type": mealType }],
-                new: True
+                new: True,
+                runValidators: true
             }
         )
 

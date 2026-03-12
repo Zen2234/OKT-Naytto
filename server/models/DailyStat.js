@@ -2,7 +2,14 @@ const mongoose = require('mongoose')
 
 const MealSchema = new mongoose.Schema({
     type: { type: String, required: true },
-    count: { type: Number, default: 0 },
+    count: {
+        type: Number,
+        default: 0,
+        validate: {
+            validator: Number.isInteger,
+            message: 'Syötä vain kokonaislukuja (Ei pilkkuja eikä pisteitä)'
+        }
+    },
     note: { type: String, default: "" }
 })
 
