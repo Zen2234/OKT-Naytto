@@ -13,7 +13,7 @@ const days = ["Ma", "Ti", "Ke", "To", "Pe"];
 const restaurants = {
   "Napostella": ["puuro", "lounas"],
   "Ilona": ["puuro", "lounas"],
-  "Käenkaali": ["aamupala", "lounas buffet", "metsäeväät", "päivällinen"],
+  "Käenkaali": ["aamupala", "lounas", "metsäeväät", "päivällinen"],
   "Kiito-Orava": ["puuro", "lounas"]
 };
 
