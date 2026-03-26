@@ -31,6 +31,12 @@ function getWeekNumber(date) {
 
 export default function App() {
 
+  const handleLogout = () => {
+    localStorage.removeItem("sessionToken")
+    localStorage.removeItem("userEmail")
+    window.location.reload()
+  }
+
   const [weekOffset, setWeekOffset] = useState(0);
   const [reports, setReports] = useState({});
 
@@ -92,8 +98,10 @@ export default function App() {
 
   return (
     <div className="app-container">
-
-      <h1>Ruokailijatiedot</h1>
+      <div className="app-header">
+        <h1>Ruokailijatiedot</h1>
+        <button onClick={handleLogout} className="logout-button">Kirjaudu ulos</button>
+      </div>
 
       <h2>
         Viikko {weekNumber} – {monthName} {year}

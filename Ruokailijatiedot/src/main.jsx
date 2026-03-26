@@ -1,4 +1,28 @@
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import App from './App.jsx'
+import Login from './components/Login.jsx'
+import Verify from './components/Verify.jsx'
 
-createRoot(document.getElementById('root')).render(<App />)
+const PrivateRoute = ({ children }) => {
+    const token = localStorage.getItem('sessionToken')
+
+    return token ? children: <Navigate to="/login" />
+}
+
+createRoot(document.getElementById('root')).render(
+    <BrowserRouter>
+        <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/verify" element={<Verify />} />
+            <Route
+                path="/"
+                element={
+                    <PrivateRoute>
+                        <App />
+                    </PrivateRoute>
+                }
+               />
+        </Routes>
+    </BrowserRouter>
+)
