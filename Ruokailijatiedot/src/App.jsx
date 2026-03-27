@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import DaySection from "./components/Days";
 import WeekSummary from "./components/WeekSum";
-import {
-  getWeekTotal,
-  getWeekFieldTotals
-} from "./utils/calculations";
+import { getWeekFieldTotals } from "./utils/calculations";
 
 import "./App.css";
 
@@ -31,28 +28,6 @@ function getWeekNumber(date) {
 
 export default function App() {
 
-  const handleLogout = () => {
-    localStorage.removeItem("sessionToken")
-    localStorage.removeItem("userEmail")
-    window.location.reload()
-  }
-
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [reports, setReports] = useState({});
-
-  const today = new Date;
-  today.setDate(today.getDate() + weekOffset * 7);
-
-  const weekNumber = getWeekNumber(today);
-  const year = today.getFullYear();
-  const monthName = months[today.getMonth()];
-  const weekKey = `${year}-W${weekNumber}`;
-
-  const monday = new Date(today);
-  const day = monday.getDay();
-  const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
-  monday.setDate(diff);
-
   const createEmptyWeek = () => {
     const data = {};
     days.forEach(day => {
@@ -67,31 +42,109 @@ export default function App() {
     return data;
   };
 
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [reports, setReports] = useState({});
+
+  const today = new Date();
+  today.setDate(today.getDate() + weekOffset * 7);
+
+  const weekNumber = getWeekNumber(today);
+  const year = today.getFullYear();
+  const monthName = months[today.getMonth()];
+  const weekKey = `${year}-W${weekNumber}`;
+
+  const monday = new Date(today);
+  const day = monday.getDay();
+  const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
+  monday.setDate(diff);
+
   const weekData = reports[weekKey] || createEmptyWeek();
 
-  useEffect(() => {
-    const saved = localStorage.getItem("annosraportit");
-    if (saved) setReports(JSON.parse(saved));
-  }, []);
+  const handleLogout = () => {
+    localStorage.removeItem("sessionToken");
+    localStorage.removeItem("userEmail");
+    window.location.reload();
+  };
 
   useEffect(() => {
-    localStorage.setItem("annosraportit", JSON.stringify(reports));
-  }, [reports]);
+    const fetchWeek = async () => {
+      try {
+        const token = localStorage.getItem("sessionToken");
+        const startDate = `${monday.getFullYear()}-${monday.getMonth()+1}-${monday.getDate()}`;
+        const end = new Date(monday);
+        end.setDate(monday.getDate() + 4);
+        const endDate = `${end.getFullYear()}-${end.getMonth()+1}-${end.getDate()}`;
+        const res = await fetch(
+          `http://localhost:3001/api/stats?startDate=${startDate}&endDate=${endDate}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          }
+        );
+        if (!res.ok) throw new Error("Failed to fetch week data");
 
-  const updateValue = (day, restaurant, field, value) => {
+        const data = await res.json();
+        const weekObj = createEmptyWeek();
+
+        data.forEach(dayStat => {
+          const jsDay = new Date(dayStat.date).getDay();
+          const dayIndex = jsDay === 0 ? 6 : jsDay - 1;
+          const dayName = days[dayIndex];
+
+          if (!dayName) return;
+          dayStat.units.forEach(unit => {
+            unit.meals.forEach(meal => {
+              if (!weekObj[dayName][unit.unitName]) {
+                weekObj[dayName][unit.unitName] = {};
+              }
+              weekObj[dayName][unit.unitName][meal.type] = meal.count;
+            });
+          });
+        });
+        setReports(prev => ({ ...prev, [weekKey]: weekObj }));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchWeek();
+  }, [weekOffset]);
+
+  const updateValue = async (dayName, restaurant, field, value) => {
     setReports(prev => ({
       ...prev,
       [weekKey]: {
         ...(prev[weekKey] || createEmptyWeek()),
-        [day]: {
-          ...((prev[weekKey] || createEmptyWeek())[day]),
+        [dayName]: {
+          ...((prev[weekKey] || createEmptyWeek())[dayName]),
           [restaurant]: {
-            ...((prev[weekKey] || createEmptyWeek())[day][restaurant]),
+            ...((prev[weekKey] || createEmptyWeek())[dayName][restaurant]),
             [field]: value
           }
         }
       }
     }));
+
+    const token = localStorage.getItem("sessionToken");
+    const dayIndex = days.indexOf(dayName);
+    const selectedDate = new Date(monday);
+    selectedDate.setDate(monday.getDate() + dayIndex);
+
+    try {
+      await fetch(`http://localhost:3001/api/stats/update-count`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          date: selectedDate.toISOString().split("T")[0],
+          unitName: restaurant,
+          mealType: field,
+          newCount: Number(value)
+        })
+      });
+    } catch (err) {
+      console.error("Failed to update backend:", err);
+    }
   };
 
   const fieldTotals = getWeekFieldTotals(weekData);
@@ -100,7 +153,9 @@ export default function App() {
     <div className="app-container">
       <div className="app-header">
         <h1>Ruokailijatiedot</h1>
-        <button onClick={handleLogout} className="logout-button">Kirjaudu ulos</button>
+        <button onClick={handleLogout} className="logout-button">
+          Kirjaudu ulos
+        </button>
       </div>
 
       <h2>
@@ -116,7 +171,9 @@ export default function App() {
         </button>
       </div>
 
-      <h3>Viikon yhteensä: <WeekSummary fieldTotals={fieldTotals} /></h3>
+      <h3>
+        Viikon yhteensä: <WeekSummary fieldTotals={fieldTotals} />
+      </h3>
 
       <table>
         <tbody>
@@ -138,7 +195,6 @@ export default function App() {
           })}
         </tbody>
       </table>
-
     </div>
   );
 }
