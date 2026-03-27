@@ -8,11 +8,6 @@ export const getDayTotal = (dayData) => {
     .reduce((sum, restaurant) => sum + getRowTotal(restaurant), 0);
 };
 
-export const getWeekTotal = (weekData) => {
-  return Object.values(weekData)
-    .reduce((sum, day) => sum + getDayTotal(day), 0);
-};
-
 export const getWeekFieldTotals = (weekData) => {
   const totals = {};
 
