@@ -82,7 +82,7 @@ export default function App() {
         end.setDate(monday.getDate() + 4);
         const endDate = formatDate(end)
         const res = await fetch(
-          `http://localhost:3001/api/stats?startDate=${startDate}&endDate=${endDate}`,
+          `${import.meta.env.VITE_API_URL}/stats?startDate=${startDate}&endDate=${endDate}`,
           {
             headers: token ? { Authorization: `Bearer ${token}` } : {}
           }
@@ -136,7 +136,7 @@ export default function App() {
     selectedDate.setDate(monday.getDate() + dayIndex);
 
     try {
-      await fetch(`http://localhost:3001/api/stats/update-count`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/stats/update-count`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

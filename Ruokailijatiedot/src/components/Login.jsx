@@ -11,7 +11,7 @@ export default function Login() {
         setMessage("")
 
         try {
-            const response = await fetch('http://localhost:3001/api/auth/magic-link', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/magic-link`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),
