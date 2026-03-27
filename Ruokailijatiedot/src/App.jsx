@@ -26,6 +26,13 @@ function getWeekNumber(date) {
   return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
 }
 
+function formatDate(dateObj) {
+  const y = dateObj.getFullYear()
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0')
+  const d = String(dateObj.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 export default function App() {
 
   const createEmptyWeek = () => {
@@ -70,10 +77,10 @@ export default function App() {
     const fetchWeek = async () => {
       try {
         const token = localStorage.getItem("sessionToken");
-        const startDate = `${monday.getFullYear()}-${monday.getMonth()+1}-${monday.getDate()}`;
+        const startDate = formatDate(monday)
         const end = new Date(monday);
         end.setDate(monday.getDate() + 4);
-        const endDate = `${end.getFullYear()}-${end.getMonth()+1}-${end.getDate()}`;
+        const endDate = formatDate(end)
         const res = await fetch(
           `http://localhost:3001/api/stats?startDate=${startDate}&endDate=${endDate}`,
           {
@@ -136,7 +143,7 @@ export default function App() {
           ...(token && { Authorization: `Bearer ${token}` })
         },
         body: JSON.stringify({
-          date: selectedDate.toISOString().split("T")[0],
+          date: formatDate(selectedDate),
           unitName: restaurant,
           mealType: field,
           newCount: Number(value)

@@ -33,7 +33,6 @@ router.post('/daily', authToken, async (req, res) => {
 // This should update just one meal in case of mistakes, instead of having to overwrite the entire day
 router.patch('/update-count', authToken, async (req, res) => {
     let { date, unitName, mealType, newCount } = req.body
-
     const parsedCount = Number(newCount)
 
     if (isNaN(parsedCount) || parsedCount < 0) {
@@ -43,25 +42,31 @@ router.patch('/update-count', authToken, async (req, res) => {
     }
 
     try {
-        const updated = await DailyStat.findOneAndUpdate(
-            {
-                date: date,
-                "units.unitName": unitName,
-                "units.meals.type": mealType
-            },
-            {
-                $set: { "units.$[u].meals.$[m].count": newCount }
-            },
-            {
-                arrayFilters: [{ "u.unitName": unitName }, { "m.type": mealType }],
-                new: true,
-                runValidators: true
-            }
-        )
+        let dailyStat = await DailyStat.findOne({ date: date })
 
-        if (!updated) return res.status(404).json({ error: 'Record not found' })
-        res.json(updated)
+        if (!dailyStat) {
+            dailyStat = new DailyStat({ date: date, units:[] })
+        }
+
+        let unit = dailyStat.units.find(u => u.unitName === unitName)
+
+        if (!unit) {
+            dailyStat.units.push({ unitName: unitName, meals:[] })
+            unit = dailyStat.units[dailyStat.units.length - 1]
+        }
+
+        let meal = unit.meals.find(m => m.type === mealType)
+
+        if (!meal) {
+            unit.meals.push({ type: mealType, count: parsedCount })
+        } else {
+            meal.count = parsedCount
+        }
+
+        await dailyStat.save()
+        res.json(dailyStat)
     } catch (err) {
+        console.error(err)
         res.status(500).json({ error: err.message })
     }
 })
