@@ -3,7 +3,7 @@ const router = express.Router()
 const DailyStat = require('../models/DailyStat')
 const authToken = require('../middleware/auth')
 
-router.get('/', async (req, res) => {
+router.get('/', authToken, async (req, res) => {
     const { startDate, endDate } = req.query
     try {
         let query = {}
